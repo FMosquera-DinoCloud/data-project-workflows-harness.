@@ -1,0 +1,5 @@
+.harness/run-status
+.DS_Store
+*.tmp
+.claude/*
+!.claude/skills/

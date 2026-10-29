@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key><string>com.dinocloud.harness.friday</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>/bin/bash</string>
+    <string>__HOME__/claude-workspace/harness/bin/harness-run</string>
+    <string>friday</string>
+  </array>
+  <key>StartCalendarInterval</key>
+  <array>
+    <dict><key>Weekday</key><integer>5</integer><key>Hour</key><integer>15</integer><key>Minute</key><integer>50</integer></dict>
+  </array>
+  <key>StandardOutPath</key><string>__HOME__/claude-workspace/logs/launchd-friday.out</string>
+  <key>StandardErrorPath</key><string>__HOME__/claude-workspace/logs/launchd-friday.err</string>
+  <key>ProcessType</key><string>Background</string>
+</dict>
+</plist>

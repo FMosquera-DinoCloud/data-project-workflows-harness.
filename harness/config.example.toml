@@ -1,0 +1,35 @@
+# Configuración personal del harness. Copiala a harness/config.toml (no se versiona) y completala.
+
+[user]
+name          = ""                     # tu nombre, como figura en ClickUp y Calendar
+email         = ""                     # tu mail @dinocloud.com
+role          = "engineer"             # engineer: status, ingesta y daily centrados en vos · tl-sa: vista del equipo (perfil SA/TL, ver reference/perfil-sa.md)
+timezone      = "America/Argentina/Buenos_Aires"
+slack_user_id = ""                     # tu ID de Slack (perfil → ⋮ → Copiar ID de miembro); destino del DM diario
+clickup_me    = "me"                   # se resuelve con clickup_resolve_assignees
+weekly_hours  = 40                     # contra esto compara weekly-hours si el proyecto no tiene allocations.toon
+
+[paths]
+projects_root = "~/dino-projects"
+workspace     = "~/claude-workspace"
+
+[schedule]                             # informativo; la agenda real la registran install.sh --launchd o install-tasks.ps1
+daily  = "lun-vie 09:00"
+weekly = "lun 09:00"
+friday = "vie 16:00"
+
+[google]                               # API de Google (skill google-api); nada de esto se commitea
+client_file = "~/.config/claude-harness/google-client.json"
+token_dir   = "~/.config/claude-harness"
+
+[policy]
+consolidate_after_days = 14            # contexto más viejo que esto se consolida en memory/
+stale_task_days        = 5             # tarea sin movimiento en ClickUp → aparece como estancada
+drive_max_mb           = 20            # archivos más grandes no se leen; quedan en el manifest con link
+
+[plugin_groups]                        # plugins que un proyecto activa o no; las skills del harness van siempre
+# project-new los ofrece al dar de alta un proyecto y scripts/apply_profile.py los aplica. `recommend` son las señales del repo que sugieren el grupo.
+# Cada skill activa cuesta ~100-200 tokens por sesión.
+code  = { plugins = ["pr-review-toolkit@claude-plugins-official", "feature-dev@claude-plugins-official", "security-guidance@claude-plugins-official"], why = "desarrollo y review de código de aplicación", recommend = ["src", "package.json", "pyproject.toml", "requirements.txt"] }
+iac   = { plugins = ["terraform-aws-standard@dinocloud"], why = "Terraform / IaC en AWS", recommend = ["*.tf"] }
+setup = { plugins = ["claude-code-setup@claude-plugins-official"], why = "recomendar hooks, subagentes y skills para el repo", recommend = [] }

@@ -1,0 +1,197 @@
+<title>{{TITLE}}</title>
+<!--
+  Shell del modo Artifact de la skill `aws-diagram`. Ver SKILL.md, Paso 6.
+
+  Los marcadores a reemplazar son, entre llaves dobles: TITLE, SUBTITLE, SVG,
+  LEGEND y FOOTER. NO se listan acá con su sintaxis literal a propósito: un
+  reemplazo por texto plano los tomaría también desde este comentario e
+  insertaría el diagrama dos veces.
+
+  El contenido de SVG sale de:
+      python embed_svg_assets.py <archivo.svg> --for-html --stdout
+  que devuelve un vector autocontenido (íconos AWS como data URIs). Sin ese
+  paso el Artifact se ve vacío: graphviz referencia los PNG por path absoluto.
+
+  Un solo look, sin branding — el mismo criterio que el diagrama.
+
+  TITLE, SUBTITLE y FOOTER se insertan como HTML: escapá `&`, `<` y `>` antes de
+  reemplazarlos. Un título con un `&` suelto rompe la página en silencio. SVG y
+  LEGEND sí son HTML a propósito (el vector, y una lista de <li>).
+
+  El lienzo del diagrama queda SIEMPRE claro, en light y en dark: el vector trae
+  los colores del texto horneados y sobre fondo oscuro sería ilegible. El cromo
+  de la página sí acompaña el tema del lector.
+-->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;700&family=Source+Sans+3:wght@400;600&display=swap" rel="stylesheet">
+
+<style>
+  :root {
+    --bg: #ffffff;
+    --surface: #f6f7f8;
+    --border: #dfe3e6;
+    --text: #1d2429;
+    --muted: #66727c;
+    --accent: #232f3e;
+    --canvas: #ffffff;
+    --canvas-border: #e3e7ea;
+    --shadow: 0 1px 2px rgba(16, 24, 32, .06), 0 8px 24px rgba(16, 24, 32, .06);
+    --sans: "Source Sans 3", -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+    --display: "Montserrat", -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+  }
+
+  :root:not([data-theme="light"]) {
+    color-scheme: light;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #14181c;
+      --surface: #1b2026;
+      --border: #2b333b;
+      --text: #e8edf1;
+      --muted: #9aa6b1;
+      --canvas: #f4f6f7;
+      --canvas-border: #2b333b;
+      --accent: #9aa6b1;
+      --shadow: 0 1px 2px rgba(0, 0, 0, .4), 0 8px 24px rgba(0, 0, 0, .35);
+      color-scheme: dark;
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --bg: #14181c;
+    --surface: #1b2026;
+    --border: #2b333b;
+    --text: #e8edf1;
+    --muted: #9aa6b1;
+    --canvas: #f4f6f7;
+    --canvas-border: #2b333b;
+    --accent: #9aa6b1;
+    --shadow: 0 1px 2px rgba(0, 0, 0, .4), 0 8px 24px rgba(0, 0, 0, .35);
+    color-scheme: dark;
+  }
+
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    font-size: 16px;
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .sheet {
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: clamp(24px, 5vw, 56px) clamp(16px, 4vw, 40px) 72px;
+  }
+
+  .eyebrow {
+    font-family: var(--display);
+    font-weight: 600;
+    font-size: 12px;
+    letter-spacing: .11em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin: 0 0 10px;
+  }
+
+  h1 {
+    font-family: var(--display);
+    font-weight: 700;
+    font-size: clamp(26px, 4vw, 36px);
+    line-height: 1.15;
+    letter-spacing: -.01em;
+    margin: 0 0 10px;
+  }
+
+  .subtitle {
+    margin: 0 0 32px;
+    max-width: 68ch;
+    color: var(--muted);
+    font-size: 17px;
+  }
+
+  /* Lienzo del diagrama: siempre claro, scroll propio si no entra a lo ancho. */
+  .canvas {
+    background: var(--canvas);
+    border: 1px solid var(--canvas-border);
+    border-radius: 14px;
+    box-shadow: var(--shadow);
+    padding: clamp(16px, 3vw, 32px);
+    overflow-x: auto;
+  }
+
+  .canvas svg {
+    display: block;
+    max-width: 100%;
+    height: auto;
+    margin: 0 auto;
+  }
+
+  .legend {
+    list-style: none;
+    margin: 28px 0 0;
+    padding: 0;
+    display: grid;
+    gap: 10px 28px;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  }
+
+  .legend li {
+    position: relative;
+    padding-left: 18px;
+    color: var(--muted);
+    font-size: 15px;
+  }
+
+  .legend li::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: .62em;
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--accent);
+  }
+
+  .legend strong {
+    color: var(--text);
+    font-weight: 600;
+  }
+
+  footer {
+    margin-top: 40px;
+    padding-top: 18px;
+    border-top: 1px solid var(--border);
+    color: var(--muted);
+    font-size: 13px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 20px;
+    justify-content: space-between;
+  }
+</style>
+
+<div class="sheet">
+  <p class="eyebrow">Arquitectura AWS</p>
+  <h1>{{TITLE}}</h1>
+  <p class="subtitle">{{SUBTITLE}}</p>
+
+  <div class="canvas">
+    {{SVG}}
+  </div>
+
+  <ul class="legend">
+    {{LEGEND}}
+  </ul>
+
+  <footer>
+    <span>{{FOOTER}}</span>
+    <span>Generado con la skill <code>aws-diagram</code> · diagram-as-code</span>
+  </footer>
+</div>

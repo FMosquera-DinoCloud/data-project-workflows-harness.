@@ -1,0 +1,730 @@
+<!doctype html>
+<html lang="es">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Guía del harness</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;800&family=Source+Sans+3:ital,wght@0,400;0,600;1,400&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: índice fijo a la izquierda en desktop, columna única de lectura; en mobile el índice pasa arriba como scroll horizontal */
+:root {
+  --bg: #F8F8F8;
+  --surface: #ffffff;
+  --fg: #1f2a26;
+  --muted: #5b6662;
+  --line: #dfe5e2;
+  --accent: #009966;
+  --accent-strong: #006e47;
+  --accent-soft: #e3f6ec;
+  --blue: #1E538C;
+  --blue-soft: #e6eef8;
+  --warn: #9a5b00;
+  --warn-soft: #fbf0dc;
+  --code-bg: #f1f4f2;
+  --code-fg: #1f2a26;
+  --font-display: "Montserrat", "Segoe UI", system-ui, sans-serif;
+  --font-body: "Source Sans 3", "Source Sans Pro", "Segoe UI", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "Cascadia Code", Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #121816; --surface: #1a2220; --fg: #e4ece8; --muted: #9fb0a9; --line: #2c3834;
+    --accent: #2fc48a; --accent-strong: #7fdcb1; --accent-soft: #15372a;
+    --blue: #8fb9e8; --blue-soft: #18283a; --warn: #f0b860; --warn-soft: #3a2c14;
+    --code-bg: #0e1412; --code-fg: #d6e4dd; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #121816; --surface: #1a2220; --fg: #e4ece8; --muted: #9fb0a9; --line: #2c3834;
+  --accent: #2fc48a; --accent-strong: #7fdcb1; --accent-soft: #15372a;
+  --blue: #8fb9e8; --blue-soft: #18283a; --warn: #f0b860; --warn-soft: #3a2c14;
+  --code-bg: #0e1412; --code-fg: #d6e4dd; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+body { background: var(--bg); color: var(--fg); font-family: var(--font-body); font-size: 17px; line-height: 1.6; }
+.wrap { max-width: 1180px; margin: 0 auto; padding-inline: 16px; padding-block: 0 48px; display: grid; grid-template-columns: 220px minmax(0, 1fr); gap: 48px; }
+@media (max-width: 900px) { .wrap { grid-template-columns: minmax(0, 1fr); gap: 0; } }
+
+h1, h2, h3, h4 { font-family: var(--font-display); text-wrap: balance; line-height: 1.2; margin: 0; }
+h2 { font-size: 1.7rem; font-weight: 800; color: var(--fg); }
+h3 { font-size: 1.15rem; font-weight: 600; }
+p { margin: 0; max-width: 68ch; }
+a { color: var(--accent-strong); }
+code { font-family: var(--font-mono); font-size: .86em; background: var(--code-bg); padding: .08em .35em; border-radius: 4px; }
+.eyebrow { font-family: var(--font-display); font-size: .74rem; font-weight: 600; letter-spacing: .12em; text-transform: uppercase; color: var(--accent); }
+
+/* Índice */
+nav.toc { position: sticky; top: env(safe-area-inset-top, 0px); align-self: start; padding-block: 32px; }
+nav.toc ol { list-style: none; margin: 12px 0 0; padding: 0; display: grid; gap: 2px; counter-reset: toc; }
+nav.toc a { display: block; text-decoration: none; color: var(--muted); font-family: var(--font-display); font-size: .86rem; font-weight: 500; padding: 6px 10px; border-radius: 6px; }
+nav.toc a:hover, nav.toc a:focus-visible { color: var(--fg); background: var(--accent-soft); outline: none; }
+@media (max-width: 900px) {
+  nav.toc { position: static; padding-block: 16px 0; }
+  nav.toc ol { display: flex; overflow-x: auto; gap: 6px; padding-bottom: 6px; }
+  nav.toc a { white-space: nowrap; border: 1px solid var(--line); background: var(--surface); }
+}
+
+main { min-width: 0; display: grid; gap: 72px; padding-top: 32px; }
+section { display: grid; gap: 20px; scroll-margin-top: 16px; min-width: 0; }
+.lead { font-size: 1.12rem; color: var(--muted); }
+
+/* Hero */
+.hero { display: grid; gap: 22px; padding-block: 24px 8px; }
+.hero h1 { font-size: clamp(2.1rem, 5vw, 3.3rem); font-weight: 800; letter-spacing: -.01em; }
+.hero h1 em { font-style: normal; color: var(--accent); }
+.outcomes { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px; }
+.outcome { border-top: 3px solid var(--accent); background: var(--surface); padding: 14px 14px 16px; border-radius: 0 0 8px 8px; display: grid; gap: 4px; }
+.outcome b { font-family: var(--font-display); font-size: .95rem; }
+.outcome span { color: var(--muted); font-size: .92rem; line-height: 1.4; }
+
+/* Figuras */
+figure { margin: 0; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 18px; overflow-x: auto; }
+figure svg { display: block; width: 100%; min-width: 620px; height: auto; }
+figure.narrow svg { min-width: 0; }
+figcaption { font-size: .88rem; color: var(--muted); margin-top: 10px; }
+svg text { font-family: var(--font-display); }
+.s-box { fill: var(--surface); stroke: var(--line); stroke-width: 1.5; }
+.s-acc { fill: var(--accent-soft); stroke: var(--accent); stroke-width: 1.5; }
+.s-blue { fill: var(--blue-soft); stroke: var(--blue); stroke-width: 1.5; }
+.s-warn { fill: var(--warn-soft); stroke: var(--warn); stroke-width: 1.5; }
+.s-t { fill: var(--fg); font-size: 13px; font-weight: 600; }
+.s-s { fill: var(--muted); font-size: 11px; font-weight: 500; }
+.s-a { stroke: var(--muted); stroke-width: 1.5; fill: none; }
+.s-ah { fill: var(--muted); }
+.s-acc-t { fill: var(--accent-strong); font-size: 11px; font-weight: 600; }
+
+/* Pasos */
+.steps { list-style: none; margin: 0; padding: 0; display: grid; gap: 28px; counter-reset: step; }
+.step { display: grid; grid-template-columns: 44px minmax(0, 1fr); gap: 16px; }
+.step::before { counter-increment: step; content: counter(step); font-family: var(--font-display); font-weight: 800; font-size: 1.05rem; color: #fff; background: var(--accent); width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center; }
+.step-body { display: grid; gap: 10px; min-width: 0; }
+.step-body ul { margin: 0; padding-left: 20px; max-width: 68ch; }
+
+/* Bloques de comando y prompt */
+.cmd { position: relative; background: var(--code-bg); border: 1px solid var(--line); border-radius: 8px; min-width: 0; }
+.cmd .tag { position: absolute; top: 8px; left: 12px; right: 76px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-family: var(--font-display); font-size: .66rem; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+.cmd.prompt { background: var(--accent-soft); border-color: color-mix(in srgb, var(--accent) 35%, transparent); }
+.cmd.prompt .tag { color: var(--accent-strong); }
+.cmd pre { margin: 0; padding: 28px 14px 12px; overflow-x: auto; font-family: var(--font-mono); font-size: .84rem; line-height: 1.55; color: var(--code-fg); white-space: pre; }
+.cmd.prompt pre { white-space: pre-wrap; font-family: var(--font-body); font-size: .98rem; }
+.copy { position: absolute; top: 6px; right: 6px; font-family: var(--font-display); font-size: .72rem; font-weight: 600; border: 1px solid var(--line); background: var(--surface); color: var(--fg); border-radius: 6px; padding: 4px 10px; cursor: pointer; }
+.copy:hover { border-color: var(--accent); color: var(--accent-strong); }
+.copy:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.note { border-left: 3px solid var(--warn); background: var(--warn-soft); padding: 10px 14px; border-radius: 0 8px 8px 0; font-size: .95rem; max-width: 74ch; }
+.note b { font-family: var(--font-display); font-size: .82rem; }
+.two { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; }
+.two > * { min-width: 0; }
+
+/* Tarjeta de tarea */
+.task { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 18px; display: grid; gap: 8px; font-size: .95rem; }
+.task h4 { font-size: 1rem; }
+.task dl { margin: 0; display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 6px 12px; }
+.task dt { font-family: var(--font-display); font-size: .78rem; font-weight: 600; color: var(--muted); padding-top: 2px; }
+.task dd { margin: 0; }
+.task ul { margin: 0; padding-left: 18px; }
+@media (max-width: 520px) { .task dl { grid-template-columns: minmax(0, 1fr); } .task dt { padding-top: 6px; } }
+
+/* Tabs de roles */
+.tabs { display: flex; flex-wrap: wrap; gap: 8px; }
+.tab { font-family: var(--font-display); font-weight: 600; font-size: .92rem; border: 1px solid var(--line); background: var(--surface); color: var(--fg); padding: 10px 16px; border-radius: 999px; cursor: pointer; }
+.tab[aria-selected="true"] { background: var(--accent); border-color: var(--accent); color: #fff; }
+.tab:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.panel { display: grid; gap: 18px; }
+.panel[hidden] { display: none; }
+.ex { display: grid; gap: 10px; border-top: 1px solid var(--line); padding-top: 16px; }
+.ex h4 { font-size: 1rem; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { font-family: var(--font-mono); font-size: .76rem; padding: 3px 8px; border-radius: 999px; background: var(--blue-soft); color: var(--blue); }
+
+/* Tablas */
+.tbl { overflow-x: auto; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); }
+table { border-collapse: collapse; width: 100%; font-size: .94rem; }
+th, td { text-align: left; padding: 10px 14px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { font-family: var(--font-display); font-size: .78rem; font-weight: 600; letter-spacing: .04em; color: var(--muted); }
+tr:last-child td { border-bottom: 0; }
+
+/* Semana de rutinas */
+.week { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; }
+.day { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 10px; display: grid; gap: 6px; align-content: start; }
+.day b { font-family: var(--font-display); font-size: .82rem; }
+.slot { font-size: .82rem; line-height: 1.35; padding: 6px 8px; border-radius: 6px; background: var(--accent-soft); color: var(--fg); }
+.slot.w { background: var(--blue-soft); }
+.slot.f { background: var(--warn-soft); }
+.slot small { display: block; color: var(--muted); font-family: var(--font-mono); font-size: .7rem; }
+@media (max-width: 640px) { .week { grid-template-columns: minmax(0, 1fr); } }
+
+/* Checklists */
+.checks { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.checks li { position: relative; padding-left: 32px; overflow-wrap: anywhere; }
+.checks li::before { content: ""; position: absolute; left: 0; top: 0; width: 18px; height: 18px; margin-top: 4px; border-radius: 5px; border: 2px solid var(--accent); background: linear-gradient(var(--accent), var(--accent)) center / 8px 8px no-repeat; }
+.checks.dont li::before { border-color: var(--warn); background: linear-gradient(45deg, transparent 45%, var(--warn) 45% 55%, transparent 55%), linear-gradient(-45deg, transparent 45%, var(--warn) 45% 55%, transparent 55%); }
+
+footer { border-top: 1px solid var(--line); padding-top: 20px; color: var(--muted); font-size: .86rem; display: flex; flex-wrap: wrap; gap: 8px 24px; justify-content: space-between; }
+footer b { font-family: var(--font-display); color: var(--accent-strong); font-size: .8rem; letter-spacing: .06em; text-transform: uppercase; }
+</style>
+
+<div class="wrap">
+  <nav class="toc" aria-label="Índice">
+    <div class="eyebrow">Guía del harness</div>
+    <ol>
+      <li><a href="#inicio">Para qué sirve</a></li>
+      <li><a href="#mapa">Cómo fluye el conocimiento</a></li>
+      <li><a href="#tronco">Recorrido común</a></li>
+      <li><a href="#bitacora">Bitácora de decisiones</a></li>
+      <li><a href="#backlog">Backlog interno</a></li>
+      <li><a href="#roles">Recorridos por rol</a></li>
+      <li><a href="#rutinas">Rutinas</a></li>
+      <li><a href="#google">API de Google</a></li>
+      <li><a href="#practicas">Buenas prácticas</a></li>
+      <li><a href="#chequeo">¿Lo estoy usando bien?</a></li>
+    </ol>
+  </nav>
+
+  <main>
+    <!-- HERO -->
+    <section class="hero" id="inicio">
+      <div class="eyebrow">Equipo Data &amp; AI · Claude Code</div>
+      <h1>Tu proyecto, en un repo que <em>no se olvida</em></h1>
+      <p class="lead">El harness junta reuniones, mails, canales y tareas de tu proyecto en un repositorio git privado de la org. Claude lo lee antes de trabajar, así que no arrancás de cero cada sesión. Y si mañana entra alguien nuevo, clona el repo y sigue desde donde quedaste.</p>
+      <p>Esta guía la recorrés <b>sobre un proyecto real en el que estés trabajando</b>. Al terminar tenés:</p>
+      <div class="outcomes">
+        <div class="outcome"><b>Memoria del proyecto</b><span>Overview, reuniones resumidas y preguntas abiertas.</span></div>
+        <div class="outcome"><b>Bitácora de decisiones</b><span>Qué se decidió, por qué y con qué fuente.</span></div>
+        <div class="outcome"><b>Diagrama de arquitectura</b><span>Código + PNG con íconos oficiales de AWS.</span></div>
+        <div class="outcome"><b>Backlog y daily</b><span>Tus tareas priorizadas y tu reporte para la daily.</span></div>
+        <div class="outcome"><b>Una skill propia</b><span>Tu tarea repetitiva, automatizada.</span></div>
+      </div>
+    </section>
+
+    <!-- MAPA -->
+    <section id="mapa">
+      <div class="eyebrow">El modelo</div>
+      <h2>Cómo fluye el conocimiento</h2>
+      <p>Las fuentes entran por los conectores de claude.ai. Las skills las resumen y las guardan como archivos chicos en el repo del proyecto. De ahí salen el status, la daily, los diagramas y las tareas.</p>
+      <figure>
+        <svg viewBox="0 0 860 300" role="img" aria-label="Flujo: fuentes, skills, repo del proyecto y salidas">
+          <defs><marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path class="s-ah" d="M0 0L10 5L0 10z"/></marker></defs>
+          <text class="s-s" x="20" y="22">FUENTES</text>
+          <g>
+            <rect class="s-blue" x="20" y="34" width="150" height="34" rx="6"/><text class="s-t" x="34" y="56">Reuniones (Calendar)</text>
+            <rect class="s-blue" x="20" y="76" width="150" height="34" rx="6"/><text class="s-t" x="34" y="98">Gmail</text>
+            <rect class="s-blue" x="20" y="118" width="150" height="34" rx="6"/><text class="s-t" x="34" y="140">Slack</text>
+            <rect class="s-blue" x="20" y="160" width="150" height="34" rx="6"/><text class="s-t" x="34" y="182">Drive</text>
+            <rect class="s-blue" x="20" y="202" width="150" height="34" rx="6"/><text class="s-t" x="34" y="224">ClickUp · GitHub</text>
+          </g>
+          <path class="s-a" d="M175 135 H235" marker-end="url(#ah)"/>
+          <text class="s-s" x="245" y="22">SKILLS</text>
+          <rect class="s-acc" x="245" y="60" width="170" height="54" rx="8"/><text class="s-t" x="259" y="84">project-ingest</text><text class="s-s" x="259" y="101">resume, decide, propone</text>
+          <rect class="s-acc" x="245" y="126" width="170" height="54" rx="8"/><text class="s-t" x="259" y="150">drive-mirror</text><text class="s-s" x="259" y="167">espejo de solo lectura</text>
+          <rect class="s-acc" x="245" y="192" width="170" height="54" rx="8"/><text class="s-t" x="259" y="216">project-consolidate</text><text class="s-s" x="259" y="233">comprime lo viejo</text>
+          <path class="s-a" d="M420 150 H470" marker-end="url(#ah)"/>
+          <text class="s-s" x="480" y="22">REPO DEL PROYECTO (git)</text>
+          <rect class="s-box" x="480" y="34" width="190" height="230" rx="10"/>
+          <text class="s-t" x="496" y="60">docs/00-overview.md</text>
+          <text class="s-t" x="496" y="86">docs/decisions/</text>
+          <text class="s-t" x="496" y="112">context/meetings/</text>
+          <text class="s-t" x="496" y="138">context/digest/</text>
+          <text class="s-t" x="496" y="164">memory/</text>
+          <text class="s-t" x="496" y="190">backlog/</text>
+          <text class="s-t" x="496" y="216">docs/diagrams/</text>
+          <text class="s-acc-t" x="496" y="246">index.toon → se busca acá primero</text>
+          <path class="s-a" d="M675 150 H715" marker-end="url(#ah)"/>
+          <text class="s-s" x="725" y="22">SALIDAS</text>
+          <rect class="s-box" x="725" y="34" width="120" height="34" rx="6"/><text class="s-t" x="739" y="56">status del día</text>
+          <rect class="s-box" x="725" y="76" width="120" height="34" rx="6"/><text class="s-t" x="739" y="98">daily report</text>
+          <rect class="s-box" x="725" y="118" width="120" height="34" rx="6"/><text class="s-t" x="739" y="140">diagramas</text>
+          <rect class="s-box" x="725" y="160" width="120" height="34" rx="6"/><text class="s-t" x="739" y="182">tareas</text>
+          <rect class="s-box" x="725" y="202" width="120" height="34" rx="6"/><text class="s-t" x="739" y="224">KT a otro</text>
+          <path class="s-a" d="M575 268 V288 H130 V244" marker-end="url(#ah)" stroke-dasharray="4 4"/>
+          <text class="s-s" x="250" y="283">git push: el próximo que entra clona y retoma</text>
+        </svg>
+        <figcaption>Nada se copia crudo: de cada reunión o hilo queda el resumen, las decisiones, los action items y el link a la fuente.</figcaption>
+      </figure>
+    </section>
+
+    <!-- TRONCO COMÚN -->
+    <section id="tronco">
+      <div class="eyebrow">Para todos · ~2 h la primera vez</div>
+      <h2>Recorrido común</h2>
+      <p>Estos ocho pasos son iguales para Data, AI y ML. Después seguís con los ejercicios de tu rol.</p>
+
+      <ol class="steps">
+        <li class="step"><div class="step-body">
+          <h3>Instalá el harness</h3>
+          <p>Clonalo en <code>~/claude-workspace</code>. Las skills asumen esa ruta.</p>
+          <div class="cmd"><span class="tag">terminal</span><button class="copy" type="button">Copiar</button><pre>git clone https://github.com/JuanMartinezDinoCloud/claude-harness.git ~/claude-workspace
+cd ~/claude-workspace</pre></div>
+          <div class="two">
+            <div class="cmd"><span class="tag">Windows (PowerShell)</span><button class="copy" type="button">Copiar</button><pre>powershell -ExecutionPolicy Bypass -File harness\install.ps1
+# diagnóstico
+powershell -ExecutionPolicy Bypass -File harness\install.ps1 -Status</pre></div>
+            <div class="cmd"><span class="tag">macOS</span><button class="copy" type="button">Copiar</button><pre>bash harness/install.sh --all
+# diagnóstico
+bash harness/install.sh --status</pre></div>
+          </div>
+          <p>Después configurá tu usuario. <code>role = "engineer"</code> hace que la ingesta, el status y la daily muestren <b>lo tuyo</b> y no todo el equipo.</p>
+          <div class="cmd"><span class="tag">terminal</span><button class="copy" type="button">Copiar</button><pre>cp harness/config.example.toml harness/config.toml</pre></div>
+          <div class="cmd"><span class="tag">harness/config.toml</span><button class="copy" type="button">Copiar</button><pre>[user]
+name = "Tu Nombre"
+email = "tu.usuario@dinocloud.com"
+role = "engineer"          # "engineer" | "tl-sa"
+slack_user_id = "U0XXXXXXX" # tu propio ID: el DM de las rutinas te llega a vos</pre></div>
+          <p>Por último, en claude.ai → Settings → Connectors, autenticá <b>Google Calendar, Gmail, Google Drive, Slack, ClickUp y GitHub</b>. Abrí <code>claude</code> en la terminal y corré <code>/skills</code>: tenés que ver <code>project-new</code>, <code>project-ingest</code>, <code>backlog</code>, <code>aws-diagram</code> y el resto.</p>
+        </div></li>
+
+        <li class="step"><div class="step-body">
+          <h3>Dá de alta tu proyecto real</h3>
+          <p><code>project-new</code> te pide el cliente y el alcance autorizado, crea la estructura, busca las fuentes con los conectores y deja el repo privado en la org <code>dinocloud</code>.</p>
+          <div class="cmd prompt"><span class="tag">prompt en Claude Code</span><button class="copy" type="button">Copiar</button><pre>Dá de alta el proyecto &lt;tu-proyecto&gt; en el harness. Soy &lt;Data Engineer | AI Engineer | ML Engineer&gt;. El canal interno de Slack es &lt;#canal&gt; y las reuniones tienen "&lt;palabra del título&gt;" en el nombre.</pre></div>
+          <div class="two">
+            <figure class="narrow">
+              <svg viewBox="0 0 330 330" role="img" aria-label="Árbol de carpetas del proyecto">
+                <g font-family="JetBrains Mono, monospace" font-size="12">
+                  <text class="s-t" x="10" y="20">~/dino-projects/&lt;tu-proyecto&gt;/</text>
+                  <text class="s-s" x="22" y="44">├─ CLAUDE.md</text><text class="s-acc-t" x="170" y="44">qué leer primero</text>
+                  <text class="s-s" x="22" y="64">├─ project.toml</text><text class="s-acc-t" x="170" y="64">fuentes y equipo</text>
+                  <text class="s-s" x="22" y="84">├─ index.toon</text><text class="s-acc-t" x="170" y="84">índice buscable</text>
+                  <text class="s-s" x="22" y="104">├─ docs/</text>
+                  <text class="s-s" x="22" y="124">│  ├─ 00-overview.md</text><text class="s-acc-t" x="190" y="124">una pantalla</text>
+                  <text class="s-s" x="22" y="144">│  ├─ decisions/</text><text class="s-acc-t" x="190" y="144">bitácora</text>
+                  <text class="s-s" x="22" y="164">│  ├─ architecture/</text>
+                  <text class="s-s" x="22" y="184">│  └─ diagrams/</text><text class="s-acc-t" x="190" y="184">.py + .png</text>
+                  <text class="s-s" x="22" y="204">├─ context/meetings · digest</text>
+                  <text class="s-s" x="22" y="224">├─ memory/</text><text class="s-acc-t" x="170" y="224">personas, riesgos</text>
+                  <text class="s-s" x="22" y="244">├─ backlog/</text><text class="s-acc-t" x="170" y="244">tus tareas</text>
+                  <text class="s-s" x="22" y="264">├─ status/ · reports/</text>
+                  <text class="s-s" x="22" y="284">├─ estimations/ · time/</text>
+                  <text class="s-s" x="22" y="304">└─ drive/</text><text class="s-acc-t" x="170" y="304">espejo de Drive</text>
+                </g>
+              </svg>
+            </figure>
+            <div class="note"><b>ANTES DE TRAER MATERIAL DEL CLIENTE</b><br>Confirmá el nombre del cliente y el alcance autorizado. Mientras <code>scope_confirmed = false</code>, el harness solo procesa fuentes internas. El repo del proyecto siempre es <b>privado</b> en la org, nunca en tu cuenta personal.</div>
+          </div>
+          <p>Al final, <code>project-new</code> te propone crear el remoto y lo corre con tu OK:</p>
+          <div class="cmd"><span class="tag">lo propone project-new</span><button class="copy" type="button">Copiar</button><pre>gh repo create dinocloud/&lt;tu-proyecto&gt;-harness --private --source . --push</pre></div>
+        </div></li>
+
+        <li class="step"><div class="step-body">
+          <h3>Poblá el conocimiento con tus reuniones</h3>
+          <p>Traé las últimas 2 o 3 semanas. En modo ingeniero entran <b>las reuniones en las que participaste</b> y tus hilos de Slack y Gmail. De cada reunión se lee la nota de Gemini; el transcript no se copia.</p>
+          <div class="cmd prompt"><span class="tag">prompt</span><button class="copy" type="button">Copiar</button><pre>Ponete al día con &lt;tu-proyecto&gt;: ingerí las reuniones y canales de las últimas 3 semanas.</pre></div>
+          <p>Después revisá lo que quedó: <code>docs/00-overview.md</code>, <code>docs/decisions/decisions.md</code> y <code>memory/open-questions.md</code>. Corregí lo que esté mal: es tu memoria.</p>
+          <div class="cmd prompt"><span class="tag">prompt</span><button class="copy" type="button">Copiar</button><pre>Mostrame las decisiones y las preguntas abiertas que salieron de la ingesta. ¿Qué reuniones quedaron sin notas?</pre></div>
+        </div></li>
+
+        <li class="step"><div class="step-body">
+          <h3>Armá el diagrama de arquitectura</h3>
+          <p><code>aws-diagram</code> escribe el diagrama como código Python (librería <code>diagrams</code>) con los íconos oficiales de AWS y genera PNG y SVG. Primero lee el Terraform, CDK o código del repo: no dibuja lo que supone.</p>
+          <div class="cmd"><span class="tag">una sola vez</span><button class="copy" type="button">Copiar</button><pre>bash ~/.claude/skills/aws-diagram/setup.sh
+# en Windows instala graphviz con winget; después: setup.sh --check</pre></div>
+          <div class="cmd prompt"><span class="tag">prompt</span><button class="copy" type="button">Copiar</button><pre>Leé el Terraform de &lt;ruta-al-repo-de-infra&gt; y armá el diagrama de arquitectura de &lt;tu-proyecto&gt; en docs/diagrams/. Marcalo como confidencial.</pre></div>
+          <div class="note"><b>CHEQUEO OBLIGATORIO</b><br>Antes de pegarlo en un doc: sin account IDs, ARNs, IPs reales, nombres de buckets productivos ni marca del cliente. La skill corre el grep y te muestra los hits.</div>
+        </div></li>
+
+        <li class="step"><div class="step-body">
+          <h3>Generá tu daily report</h3>
+          <p>En modo ingeniero la daily es una tarjeta tuya: qué hiciste ayer (commits, tareas movidas en ClickUp, decisiones), qué hacés hoy y qué te bloquea. Sale en HTML y en texto para pegar.</p>
+          <div class="cmd prompt"><span class="tag">prompt</span><button class="copy" type="button">Copiar</button><pre>Armá mi daily report de &lt;tu-proyecto&gt; para mañana.</pre></div>
+        </div></li>
+
+        <li class="step"><div class="step-body">
+          <h3>Registrá una decisión técnica tuya</h3>
+          <p>Cada decisión lleva contexto, qué se decidió, consecuencias, estado y la fuente. Lo descartado queda acá, no en el documento de diseño.</p>
+          <div class="cmd prompt"><span class="tag">prompt</span><button class="copy" type="button">Copiar</button><pre>Registrá en la bitácora la decisión de &lt;qué decidiste&gt;. Contexto: &lt;por qué surgió&gt;. Alternativas descartadas: &lt;cuáles y por qué&gt;. Fuente: &lt;link a reunión, PR o hilo&gt;.</pre></div>
+        </div></li>
+
+        <li class="step"><div class="step-body">
+          <h3>Convertí una tarea repetitiva en skill</h3>
+          <p>La regla: la hacés una vez a mano; si la pedís por tercera vez, pedile a Claude que la convierta en skill. La mejora queda anotada en <code>harness/improvements.md</code> y <code>harness-evolve</code> sigue proponiendo otras cada semana.</p>
+          <div class="cmd prompt"><span class="tag">prompt</span><button class="copy" type="button">Copiar</button><pre>Esto de &lt;tarea que repetís&gt; ya lo hicimos varias veces. Creá una skill del harness para hacerlo, probala en un proyecto de prueba y anotala en improvements.md.</pre></div>
+        </div></li>
+
+        <li class="step"><div class="step-body">
+          <h3>Subí todo: eso es la KT</h3>
+          <p>Las skills commitean solas con mensajes <code>harness(&lt;skill&gt;): …</code>. Vos hacés el push al cerrar el día. Quien entre al proyecto clona el repo, abre Claude Code adentro y pregunta.</p>
+          <div class="cmd"><span class="tag">terminal</span><button class="copy" type="button">Copiar</button><pre>cd ~/dino-projects/&lt;tu-proyecto&gt; &amp;&amp; git push</pre></div>
+        </div></li>
+      </ol>
+    </section>
+
+    <!-- BITÁCORA -->
+    <section id="bitacora">
+      <div class="eyebrow">La memoria del porqué</div>
+      <h2>Bitácora de decisiones</h2>
+      <p>El código dice <b>qué</b> se hizo; la bitácora dice <b>por qué</b>. Cada decisión técnica o de producto queda registrada con su contexto, la alternativa que ganó, lo que implica y de dónde salió. Vive en <code>docs/decisions/decisions.md</code>, dentro del repo del proyecto.</p>
+
+      <div class="outcomes">
+        <div class="outcome"><b>No se vuelve a discutir</b><span>"¿Por qué no usamos X?" tiene respuesta con fecha y fuente, no depende de la memoria de nadie.</span></div>
+        <div class="outcome"><b>La KT sale sola</b><span>Quien entra al proyecto lee las decisiones vigentes y entiende la solución sin una reunión de 2 horas.</span></div>
+        <div class="outcome"><b>Claude decide mejor</b><span>Antes de proponer algo, Claude lee la bitácora: no te sugiere lo que ya se descartó ni contradice lo acordado.</span></div>
+        <div class="outcome"><b>Respaldo ante el cliente</b><span>Si alguien pregunta quién y cuándo acordó un cambio de alcance o de arquitectura, está el link a la reunión o al hilo.</span></div>
+      </div>
+
+      <figure>
+        <svg viewBox="0 0 860 190" role="img" aria-label="Cómo llega una decisión a la bitácora y para qué se usa">
+          <defs><marker id="ah4" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path class="s-ah" d="M0 0L10 5L0 10z"/></marker></defs>
+          <rect class="s-blue" x="10" y="20" width="160" height="56" rx="8"/><text class="s-t" x="24" y="44">Reunión · hilo · PR</text><text class="s-s" x="24" y="62">"vamos con X"</text>
+          <rect class="s-blue" x="10" y="100" width="160" height="56" rx="8"/><text class="s-t" x="24" y="124">Vos, en la sesión</text><text class="s-s" x="24" y="142">"registrá que…"</text>
+          <path class="s-a" d="M175 48 C200 48 200 88 225 88" marker-end="url(#ah4)"/>
+          <path class="s-a" d="M175 128 C200 128 200 92 225 92" marker-end="url(#ah4)"/>
+          <rect class="s-acc" x="230" y="58" width="190" height="64" rx="8"/><text class="s-t" x="244" y="84">D-NNN en decisions.md</text><text class="s-s" x="244" y="104">project-ingest o a pedido</text>
+          <path class="s-a" d="M425 90 H465" marker-end="url(#ah4)"/>
+          <rect class="s-box" x="470" y="10" width="180" height="50" rx="8"/><text class="s-t" x="484" y="32">Overview y diseño</text><text class="s-s" x="484" y="48">reflejan el estado vigente</text>
+          <rect class="s-box" x="470" y="70" width="180" height="50" rx="8"/><text class="s-t" x="484" y="92">Status y daily</text><text class="s-s" x="484" y="108">"decisiones nuevas"</text>
+          <rect class="s-box" x="470" y="130" width="180" height="50" rx="8"/><text class="s-t" x="484" y="152">Claude, al proponer</text><text class="s-s" x="484" y="168">respeta lo decidido</text>
+          <path class="s-a" d="M655 90 H695" marker-end="url(#ah4)"/>
+          <rect class="s-warn" x="700" y="58" width="150" height="64" rx="8"/><text class="s-t" x="714" y="84">¿Cambió?</text><text class="s-s" x="714" y="104">nueva D + "reemplazada"</text>
+        </svg>
+      </figure>
+
+      <div class="two">
+        <div class="task">
+          <h4>D-007 — Carga incremental con CDC en lugar de carga completa diaria</h4>
+          <dl>
+            <dt>Fecha</dt><dd>2026-10-06 · decidió el equipo de datos con el owner técnico · fuente: link a la reunión de arquitectura</dd>
+            <dt>Contexto</dt><dd>La carga completa tarda 3 h y no llega antes de las 07:00 cuando crece el volumen.</dd>
+            <dt>Decisión</dt><dd>Captura de cambios (CDC) sobre las 4 tablas más grandes; el resto sigue con carga completa.</dd>
+            <dt>Descartado</dt><dd>Escalar el cluster: resuelve el horario pero duplica el costo mensual.</dd>
+            <dt>Consecuencias</dt><dd>Hay que monitorear el lag de replicación; el reproceso histórico pasa a ser un job aparte.</dd>
+            <dt>Estado</dt><dd>vigente</dd>
+          </dl>
+        </div>
+        <div style="display:grid;gap:12px;align-content:start">
+          <h3>Reglas</h3>
+          <ul class="checks">
+            <li>Una decisión por entrada, con <b>fuente</b> siempre: reunión, hilo, PR o mail.</li>
+            <li>Lo descartado va en la decisión, no en el documento de diseño: el diseño muestra solo el estado final.</li>
+            <li>Nada se borra. Si cambia, se registra una nueva y la anterior queda <code>reemplazada por D-NNN</code>.</li>
+            <li>Se busca por id o palabra clave en <code>index.toon</code>; no hace falta leerla entera.</li>
+            <li>Cuando crece mucho, <code>project-consolidate</code> mueve las reemplazadas a un archivo histórico.</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="two">
+        <div class="cmd prompt"><span class="tag">registrar</span><button class="copy" type="button">Copiar</button><pre>Registrá en la bitácora: decidimos &lt;qué&gt; porque &lt;por qué&gt;. Descartamos &lt;alternativa&gt;. Fuente: &lt;link&gt;.</pre></div>
+        <div class="cmd prompt"><span class="tag">consultar</span><button class="copy" type="button">Copiar</button><pre>¿Por qué decidimos &lt;tema&gt;? Citá la decisión y su fuente.</pre></div>
+        <div class="cmd prompt"><span class="tag">revisar la semana</span><button class="copy" type="button">Copiar</button><pre>¿Qué decisiones se tomaron o cambiaron esta semana?</pre></div>
+        <div class="cmd prompt"><span class="tag">reemplazar</span><button class="copy" type="button">Copiar</button><pre>Cambiamos de idea sobre &lt;tema&gt;: registrá la nueva decisión y marcá la anterior como reemplazada.</pre></div>
+      </div>
+      <div class="note"><b>OJO</b><br>Los ids <code>D-NNN</code> son internos del repo. En un ticket, un mail o un mensaje al cliente, la decisión se explica en palabras.</div>
+    </section>
+
+    <!-- BACKLOG -->
+    <section id="backlog">
+      <div class="eyebrow">Tus tareas</div>
+      <h2>Backlog interno</h2>
+      <p>ClickUp es la verdad de lo que ejecuta el equipo. El backlog interno es la verdad de <b>tus</b> tareas: lo que anotás al vuelo, lo que sale de una reunión y todavía no es ticket, lo que preparás antes de subir. Vive en dos archivos: <code>backlog/backlog.toon</code> (la tabla) y <code>backlog/notes.md</code> (el detalle de cada tarea).</p>
+
+      <figure>
+        <svg viewBox="0 0 860 170" role="img" aria-label="Del action item al ticket de ClickUp">
+          <defs><marker id="ah2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path class="s-ah" d="M0 0L10 5L0 10z"/></marker></defs>
+          <rect class="s-blue" x="10" y="40" width="150" height="64" rx="8"/><text class="s-t" x="24" y="66">Reunión o hilo</text><text class="s-s" x="24" y="86">action item</text>
+          <path class="s-a" d="M165 72 H205" marker-end="url(#ah2)"/>
+          <rect class="s-acc" x="210" y="40" width="170" height="64" rx="8"/><text class="s-t" x="224" y="66">Digest · Propuestas</text><text class="s-s" x="224" y="86">lo deja project-ingest</text>
+          <path class="s-a" d="M385 72 H425" marker-end="url(#ah2)"/>
+          <rect class="s-acc" x="430" y="40" width="170" height="64" rx="8"/><text class="s-t" x="444" y="66">backlog.toon</text><text class="s-s" x="444" y="86">T-NNN + prioridad</text>
+          <path class="s-a" d="M605 72 H645" marker-end="url(#ah2)"/>
+          <rect class="s-box" x="650" y="40" width="190" height="64" rx="8"/><text class="s-t" x="664" y="66">Tarea en ClickUp</text><text class="s-s" x="664" y="86">sin IDs internos</text>
+          <rect class="s-warn" x="380" y="122" width="60" height="22" rx="11"/><text class="s-t" x="394" y="138" font-size="11">OK</text>
+          <rect class="s-warn" x="600" y="122" width="60" height="22" rx="11"/><text class="s-t" x="614" y="138" font-size="11">OK</text>
+          <text class="s-s" x="10" y="20">También podés agregar directo: "anotá una tarea para…"</text>
+          <text class="s-s" x="10" y="160">task-writer redacta el qué y el por qué; nunca el cómo.</text>
+        </svg>
+      </figure>
+
+      <div class="two">
+        <div class="cmd"><span class="tag">backlog/backlog.toon · ejemplo</span><button class="copy" type="button">Copiar</button><pre>backlog[3]{id,title,status,priority,due,blocks,owner,phase,clickup_id,updated}:
+  T-001,Garantizar frescura diaria de la tabla de ventas,doing,P1,2026-10-15,T-003,yo,F2,,2026-10-08
+  T-002,Documentar el linaje de las tablas de clientes,todo,P3,,,yo,F2,,2026-10-07
+  T-003,Exponer métricas de ventas al tablero comercial,todo,P2,2026-10-22,,yo,F2,,2026-10-08</pre></div>
+        <div class="task">
+          <h4>T-001 — Garantizar frescura diaria de la tabla de ventas</h4>
+          <dl>
+            <dt>Objetivo</dt><dd>La tabla de ventas tiene los datos del día anterior antes de las 07:00.</dd>
+            <dt>Por qué</dt><dd>El tablero comercial la usa a primera hora; hoy llega tarde 2 de cada 5 días.</dd>
+            <dt>Criterios</dt><dd><ul><li>10 días hábiles seguidos con carga antes de las 07:00</li><li>Alerta en el canal si a las 07:00 no hay datos</li></ul></dd>
+            <dt>Restricciones</dt><dd>Sin aumentar el costo mensual del pipeline más de 10 %.</dd>
+            <dt>Entregable</dt><dd>PR mergeado + runbook en <code>docs/</code>.</dd>
+          </dl>
+        </div>
+      </div>
+      <p>La regla de prioridad es la misma para todo: primero lo que <b>bloquea a otra persona</b>, después lo que tiene <b>fecha</b>, después el <b>camino crítico</b>. P1 a P4.</p>
+      <div class="two">
+        <div class="cmd prompt"><span class="tag">agregar</span><button class="copy" type="button">Copiar</button><pre>Anotá una tarea en el backlog de &lt;tu-proyecto&gt;: &lt;qué hay que lograr y por qué&gt;.</pre></div>
+        <div class="cmd prompt"><span class="tag">propuestas de la ingesta</span><button class="copy" type="button">Copiar</button><pre>Mostrame las propuestas de backlog pendientes y vamos una por una.</pre></div>
+        <div class="cmd prompt"><span class="tag">priorizar y listar</span><button class="copy" type="button">Copiar</button><pre>Repriorizá mi backlog y mostrame solo lo que cambió.</pre></div>
+        <div class="cmd prompt"><span class="tag">subir a ClickUp</span><button class="copy" type="button">Copiar</button><pre>Subí T-003 a ClickUp. Mostrame el contenido antes de crearla.</pre></div>
+      </div>
+    </section>
+
+    <!-- ROLES -->
+    <section id="roles">
+      <div class="eyebrow">Ejercicios extra</div>
+      <h2>Recorridos por rol</h2>
+      <p>Elegí tu subpráctica. Cada recorrido suma ejercicios sobre tu proyecto real y una skill propia para crear.</p>
+      <div class="tabs" role="tablist" aria-label="Rol">
+        <button class="tab" role="tab" id="tab-data" aria-controls="p-data" aria-selected="true" type="button">Data Engineer</button>
+        <button class="tab" role="tab" id="tab-ai" aria-controls="p-ai" aria-selected="false" type="button">AI Engineer</button>
+        <button class="tab" role="tab" id="tab-ml" aria-controls="p-ml" aria-selected="false" type="button">ML Engineer / MLOps</button>
+      </div>
+
+      <div class="panel" id="p-data" role="tabpanel" aria-labelledby="tab-data">
+        <div class="ex"><h4>1 · Diagrama del pipeline de datos</h4>
+          <div class="chips"><span class="chip">Glue</span><span class="chip">S3</span><span class="chip">Redshift</span><span class="chip">Kinesis</span><span class="chip">Step Functions</span></div>
+          <div class="cmd prompt"><span class="tag">prompt</span><button class="copy" type="button">Copiar</button><pre>Armá el diagrama del pipeline de &lt;tu-proyecto&gt;: fuentes → ingesta → lake/warehouse → consumo. Una flecha por flujo, con el formato o protocolo en el label. Basate en &lt;ruta-al-repo&gt;.</pre></div></div>
+        <div class="ex"><h4>2 · Tarea de calidad de datos y estimación</h4>
+          <div class="cmd prompt"><span class="tag">prompt</span><button class="copy" type="button">Copiar</button><pre>Anotá una tarea para asegurar la calidad de &lt;tabla o dataset&gt;: checks y SLA de frescura. Después estimá un pipeline nuevo para &lt;fuente&gt; con rango de tres puntos.</pre></div></div>
+        <div class="ex"><h4>3 · Auditar dependencias del ETL</h4>
+          <div class="cmd prompt"><span class="tag">prompt</span><button class="copy" type="button">Copiar</button><pre>Auditá las dependencias de &lt;ruta-al-repo-etl&gt;: versiones, CVEs y licencias.</pre></div></div>
+        <div class="ex"><h4>Skill para crear: documentar una tabla</h4>
+          <p>Esquema, linaje, dueño, frescura esperada y consumidores, en <code>docs/data-catalog/&lt;tabla&gt;.md</code>. La pedís una vez por tabla nueva; es candidata perfecta.</p></div>
+      </div>
+
+      <div class="panel" id="p-ai" role="tabpanel" aria-labelledby="tab-ai" hidden>
+        <div class="ex"><h4>1 · Diagrama de la solución GenAI</h4>
+          <div class="chips"><span class="chip">Bedrock</span><span class="chip">Knowledge Base</span><span class="chip">AgentCore</span><span class="chip">API Gateway</span><span class="chip">Lambda</span><span class="chip">Guardrails</span></div>
+          <div class="cmd prompt"><span class="tag">prompt</span><button class="copy" type="button">Copiar</button><pre>Armá el diagrama de la solución de &lt;tu-proyecto&gt;: entrada del usuario, orquestación del agente, Knowledge Base y fuentes de datos. Basate en &lt;ruta-al-repo&gt;.</pre></div></div>
+        <div class="ex"><h4>2 · Revisar los prompts y registrar la elección de modelo</h4>
+          <div class="cmd prompt"><span class="tag">prompt</span><button class="copy" type="button">Copiar</button><pre>Analizá el system prompt de &lt;ruta-al-archivo&gt;: claridad, riesgos de inyección y mejoras. Después registrá en la bitácora qué modelo y qué estrategia de RAG usamos y por qué.</pre></div></div>
+        <div class="ex"><h4>3 · Radar de novedades</h4>
+          <div class="cmd prompt"><span class="tag">prompt</span><button class="copy" type="button">Copiar</button><pre>¿Qué salió esta semana en AWS sobre Bedrock y agentes que le sirva a &lt;tu-proyecto&gt;?</pre></div></div>
+        <div class="ex"><h4>Skill para crear: registrar un experimento</h4>
+          <p>Variante de prompt o modelo, dataset de eval, métrica y resultado, en una tabla <code>.toon</code> por proyecto. Si el proyecto usa Langfuse, combinala con la skill <code>langfuse</code>.</p></div>
+      </div>
+
+      <div class="panel" id="p-ml" role="tabpanel" aria-labelledby="tab-ml" hidden>
+        <div class="ex"><h4>1 · Diagrama del ciclo de ML</h4>
+          <div class="chips"><span class="chip">SageMaker Pipelines</span><span class="chip">Model Registry</span><span class="chip">Endpoint</span><span class="chip">Model Monitor</span><span class="chip">CodePipeline</span></div>
+          <div class="cmd prompt"><span class="tag">prompt</span><button class="copy" type="button">Copiar</button><pre>Armá el diagrama del ciclo de ML de &lt;tu-proyecto&gt;: entrenamiento, registro, deploy y monitoreo, con el CI/CD. Basate en &lt;ruta-al-repo&gt;.</pre></div></div>
+        <div class="ex"><h4>2 · Decisiones de operación del modelo</h4>
+          <div class="cmd prompt"><span class="tag">prompt</span><button class="copy" type="button">Copiar</button><pre>Registrá en la bitácora cómo versionamos los modelos, qué estrategia de deploy usamos (blue/green o canary) y los umbrales de drift que disparan un reentrenamiento.</pre></div></div>
+        <div class="ex"><h4>3 · Estimar un reentrenamiento</h4>
+          <div class="cmd prompt"><span class="tag">prompt</span><button class="copy" type="button">Copiar</button><pre>Estimá el reentrenamiento de &lt;modelo&gt; con datos nuevos de &lt;fuente&gt;, por rol y con supuestos explícitos.</pre></div></div>
+        <div class="ex"><h4>Skill para crear: reporte de un training run</h4>
+          <p>Métricas, hiperparámetros, dataset y comparación con el modelo en producción, en <code>reports/</code>. Otra opción: un runbook de incidente de modelo.</p></div>
+      </div>
+    </section>
+
+    <!-- RUTINAS -->
+    <section id="rutinas">
+      <div class="eyebrow">Automático</div>
+      <h2>Rutinas para ingenieros</h2>
+      <p>Corren solas con <code>claude -p</code> sobre tus proyectos activos. No preguntan nada y solo escriben en el repo del proyecto y en un DM de Slack a vos mismo. La diaria corre <code>drive-mirror</code>, <code>project-ingest</code>, <code>project-status</code> y tu daily report. La semanal corre <code>project-consolidate</code>, <code>aws-radar</code> y <code>harness-evolve</code>.</p>
+      <div class="two">
+        <div class="cmd"><span class="tag">Windows (PowerShell)</span><button class="copy" type="button">Copiar</button><pre>powershell -ExecutionPolicy Bypass -File harness\windows\install-tasks.ps1</pre></div>
+        <div class="cmd"><span class="tag">macOS</span><button class="copy" type="button">Copiar</button><pre>bash harness/install.sh --launchd</pre></div>
+      </div>
+      <div class="week">
+        <div class="day"><b>Lunes</b><div class="slot"><small>09:00 · daily</small>ingest + status + tu daily</div><div class="slot w"><small>09:00 · weekly</small>consolidar, radar AWS, mejoras del harness</div></div>
+        <div class="day"><b>Martes</b><div class="slot"><small>09:00 · daily</small>ingest + status + tu daily</div></div>
+        <div class="day"><b>Miércoles</b><div class="slot"><small>09:00 · daily</small>ingest + status + tu daily</div></div>
+        <div class="day"><b>Jueves</b><div class="slot"><small>09:00 · daily</small>ingest + status + tu daily</div></div>
+        <div class="day"><b>Viernes</b><div class="slot"><small>09:00 · daily</small>ingest + status + tu daily</div><div class="slot f"><small>15:50 · friday</small>propuesta de horas</div></div>
+      </div>
+      <p>La weekly de ingenieros no incluye el update de portfolio ni las asignaciones: eso queda para el rol TL-SA. Las horas del viernes se preparan solas y las cargás en ClickUp con tu OK.</p>
+    </section>
+
+    <!-- GOOGLE -->
+    <section id="google">
+      <div class="eyebrow">Avanzado · una vez por persona</div>
+      <h2>API de Google: Drive, Docs y Sheets</h2>
+      <p>Los conectores de claude.ai leen bien. Para <b>editar</b> un Google Doc o un .docx en Drive, subir un archivo, o leer una planilla en una rutina desatendida, hace falta la API directa con tu propio token OAuth.</p>
+      <figure>
+        <svg viewBox="0 0 860 200" role="img" aria-label="Flujo OAuth: proyecto de Google Cloud, client Desktop, login en el navegador, token local, scripts">
+          <defs><marker id="ah3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path class="s-ah" d="M0 0L10 5L0 10z"/></marker></defs>
+          <rect class="s-blue" x="10" y="50" width="150" height="70" rx="8"/><text class="s-t" x="24" y="76">Google Cloud</text><text class="s-s" x="24" y="94">proyecto en dinocloud.com</text><text class="s-s" x="24" y="109">APIs + consent Internal</text>
+          <path class="s-a" d="M165 85 H200" marker-end="url(#ah3)"/>
+          <rect class="s-blue" x="205" y="50" width="150" height="70" rx="8"/><text class="s-t" x="219" y="76">OAuth client</text><text class="s-s" x="219" y="94">tipo Desktop app</text><text class="s-s" x="219" y="109">google-client.json</text>
+          <path class="s-a" d="M360 85 H395" marker-end="url(#ah3)"/>
+          <rect class="s-acc" x="400" y="50" width="150" height="70" rx="8"/><text class="s-t" x="414" y="76">google-login.py</text><text class="s-s" x="414" y="94">abre el navegador</text><text class="s-s" x="414" y="109">vos das el consentimiento</text>
+          <path class="s-a" d="M555 85 H590" marker-end="url(#ah3)"/>
+          <rect class="s-warn" x="595" y="50" width="120" height="70" rx="8"/><text class="s-t" x="609" y="76">token-&lt;scope&gt;</text><text class="s-s" x="609" y="94">~/.config/</text><text class="s-s" x="609" y="109">claude-harness/</text>
+          <path class="s-a" d="M720 85 H745" marker-end="url(#ah3)"/>
+          <rect class="s-box" x="750" y="50" width="100" height="70" rx="8"/><text class="s-t" x="762" y="76">skill</text><text class="s-s" x="762" y="94">google-api</text><text class="s-s" x="762" y="109">Docs · Sheets</text>
+          <path class="s-a" d="M670 125 V160 H80 V125" stroke-dasharray="4 4"/>
+          <text class="s-s" x="230" y="180">Las credenciales viven fuera de cualquier repo. Nunca se commitean ni se comparten por chat.</text>
+        </svg>
+      </figure>
+
+      <ol class="steps">
+        <li class="step"><div class="step-body">
+          <h3>Tu proyecto de Google Cloud</h3>
+          <p>Creá un proyecto nuevo en <a href="https://console.cloud.google.com/projectcreate">console.cloud.google.com</a> con tu cuenta <b>@dinocloud.com</b> (por ejemplo, <code>claude-harness-&lt;tu-nombre&gt;</code>). No hace falta pedirle nada a nadie. Después, en <b>APIs y servicios → Biblioteca</b>, habilitá <b>Google Drive API, Google Docs API y Google Sheets API</b>.</p>
+        </div></li>
+        <li class="step"><div class="step-body">
+          <h3>Pantalla de consentimiento Internal</h3>
+          <p>Tipo <b>Internal</b>: solo entran cuentas @dinocloud.com y los tokens no vencen a los 7 días como en modo Testing.</p>
+        </div></li>
+        <li class="step"><div class="step-body">
+          <h3>Credencial OAuth de tipo Desktop app</h3>
+          <p>Credentials → Create credentials → OAuth client ID → <b>Desktop app</b> → Download JSON. Guardalo así:</p>
+          <div class="cmd"><span class="tag">terminal</span><button class="copy" type="button">Copiar</button><pre>mkdir -p ~/.config/claude-harness
+mv ~/Downloads/client_secret_*.json ~/.config/claude-harness/google-client.json</pre></div>
+        </div></li>
+        <li class="step"><div class="step-body">
+          <h3>Dependencias en el venv del harness</h3>
+          <p>El instalador ya creó <code>harness/.venv</code> con <code>harness/requirements.txt</code> (<code>google-auth</code>, <code>google-auth-oauthlib</code>, <code>google-api-python-client</code>, desde PyPI). Si te lo salteaste:</p>
+          <div class="two">
+            <div class="cmd"><span class="tag">Windows (PowerShell)</span><button class="copy" type="button">Copiar</button><pre>powershell -ExecutionPolicy Bypass -File harness\install.ps1</pre></div>
+            <div class="cmd"><span class="tag">macOS</span><button class="copy" type="button">Copiar</button><pre>bash harness/install.sh --python</pre></div>
+          </div>
+        </div></li>
+        <li class="step"><div class="step-body">
+          <h3>Primer login</h3>
+          <div class="cmd"><span class="tag">terminal</span><button class="copy" type="button">Copiar</button><pre># Windows
+harness\.venv\Scripts\python.exe harness\scripts\google-login.py --scopes drive.readonly documents drive.file
+# macOS
+harness/.venv/bin/python harness/scripts/google-login.py --scopes drive.readonly documents drive.file</pre></div>
+          <p>Se abre el navegador, aceptás y queda un token en <code>~/.config/claude-harness/token-&lt;scopes&gt;.json</code>. Con esos tres scopes leés Drive, editás Docs y subís archivos nuevos. Si después necesitás otro, repetís el login con el scope que falta.</p>
+        </div></li>
+        <li class="step"><div class="step-body">
+          <h3>Elegí el scope mínimo</h3>
+          <div class="tbl"><table>
+            <thead><tr><th>Scope</th><th>Para qué</th></tr></thead>
+            <tbody>
+              <tr><td><code>drive.readonly</code></td><td>Leer Docs y archivos de Drive.</td></tr>
+              <tr><td><code>documents.readonly</code> · <code>documents</code></td><td>Leer o editar el contenido de un Google Doc.</td></tr>
+              <tr><td><code>spreadsheets.readonly</code> · <code>spreadsheets</code></td><td>Leer o editar planillas.</td></tr>
+              <tr><td><code>drive.file</code></td><td>Crear y editar solo los archivos que crea el harness, por ejemplo subir un diagrama.</td></tr>
+              <tr><td><code>drive</code></td><td>Editar documentos existentes de otros. Pedilo solo si de verdad lo necesitás.</td></tr>
+            </tbody>
+          </table></div>
+        </div></li>
+        <li class="step"><div class="step-body">
+          <h3>Probalo desde Claude</h3>
+          <div class="cmd prompt"><span class="tag">leer</span><button class="copy" type="button">Copiar</button><pre>Leé el Google Doc &lt;link&gt; y resumilo en 5 viñetas.</pre></div>
+          <div class="cmd prompt"><span class="tag">editar · te muestra el diff y pide OK</span><button class="copy" type="button">Copiar</button><pre>En el doc &lt;link&gt;, reemplazá "&lt;texto viejo&gt;" por "&lt;texto nuevo&gt;". Primero en dry-run.</pre></div>
+          <div class="cmd prompt"><span class="tag">subir</span><button class="copy" type="button">Copiar</button><pre>Subí docs/diagrams/&lt;diagrama&gt;.png a la carpeta de Drive del proyecto.</pre></div>
+          <div class="cmd prompt"><span class="tag">planilla</span><button class="copy" type="button">Copiar</button><pre>Traé el rango A1:F50 de la hoja "&lt;hoja&gt;" de &lt;link&gt; y decime qué filas cambiaron desde la semana pasada.</pre></div>
+          <p>Claude elige la skill <code>google-api</code> sola. Si querés ver qué corre por debajo:</p>
+          <div class="cmd"><span class="tag">referencia · PY = harness/.venv/Scripts/python.exe (Windows) o harness/.venv/bin/python (macOS)</span><button class="copy" type="button">Copiar</button><pre>GAPI=~/claude-workspace/harness/skills/google-api/gapi.py
+$PY $GAPI ls &lt;folder_id&gt;
+$PY $GAPI read &lt;file_id&gt; --out doc.md               # Doc → Markdown, Sheet → CSV
+$PY $GAPI sheet &lt;id&gt; --range "Hoja!A1:F50"
+$PY $GAPI replace &lt;doc_id&gt; --find "X" --replace "Y"  # dry-run
+$PY $GAPI replace &lt;doc_id&gt; --find "X" --replace "Y" --apply
+$PY $GAPI upload archivo.png --folder &lt;folder_id&gt;    # drive.file
+$PY $GAPI upload archivo.png --update &lt;file_id&gt;      # drive</pre></div>
+        </div></li>
+      </ol>
+
+      <div class="tbl"><table>
+        <thead><tr><th>Síntoma</th><th>Causa y arreglo</th></tr></thead>
+        <tbody>
+          <tr><td><code>access_denied</code></td><td>Consent en modo External o entraste con una cuenta fuera de dinocloud.com.</td></tr>
+          <tr><td><code>invalid_grant</code> o token vencido</td><td>Borrá <code>~/.config/claude-harness/token-&lt;scope&gt;.json</code> y repetí el login.</td></tr>
+          <tr><td>403 <code>accessNotConfigured</code></td><td>La API no está habilitada en el proyecto de Google Cloud.</td></tr>
+          <tr><td>404 en un archivo del cliente</td><td>No te lo compartieron. Pedí acceso; no lo copies a tu Drive.</td></tr>
+        </tbody>
+      </table></div>
+      <div class="note"><b>REGLAS</b><br>Toda escritura en Drive va con tu OK explícito. Los archivos del cliente se leen solo si el alcance está autorizado. Nada de PII en logs ni en el repo.</div>
+    </section>
+
+    <!-- PRÁCTICAS -->
+    <section id="practicas">
+      <div class="eyebrow">Cómo trabajamos</div>
+      <h2>Buenas prácticas</h2>
+      <div class="two">
+        <div style="display:grid;gap:12px">
+          <h3>Sí</h3>
+          <ul class="checks">
+            <li>Usá Claude Code en la terminal: ves y controlás el contexto con <code>/context</code>, <code>/compact</code> y <code>/clear</code>.</li>
+            <li>Abrí la sesión <b>dentro</b> del repo del proyecto (<code>~/dino-projects/&lt;proyecto&gt;</code>): el <code>CLAUDE.md</code> le dice qué leer primero. Para tocar el harness, en <code>~/claude-workspace</code>.</li>
+            <li>Lo del proyecto va al repo (<code>decisions.md</code>, <code>CLAUDE.md</code>, <code>status/</code>); la auto memory de Claude, solo para tus preferencias de trabajo.</li>
+            <li>OK explícito antes de escribir afuera: ClickUp, Drive, mails, Slack a otros.</li>
+            <li>Markdown para prosa, <code>.toon</code> para tablas. Fechas <code>AAAA-MM-DD</code>.</li>
+            <li>Commits chicos y PRs atómicas. Push al cerrar el día.</li>
+            <li>Si corregís algo dos veces, pedí que quede como regla o como mejora en <code>improvements.md</code>.</li>
+          </ul>
+        </div>
+        <div style="display:grid;gap:12px">
+          <h3>No</h3>
+          <ul class="checks dont">
+            <li>Credenciales en archivos, prompts o diagramas. Van en variables de entorno o Secrets Manager.</li>
+            <li>Transcripts ni mails copiados enteros: solo resumen, decisiones y link.</li>
+            <li>IDs internos (<code>T-</code>, <code>D-</code>) o rutas locales en texto que sale del repo, como un ticket o un mail.</li>
+            <li>Material del cliente sin confirmar el alcance autorizado.</li>
+            <li>Repos de proyecto en tu cuenta personal de GitHub.</li>
+            <li>Abrir Claude en tu home para trabajar un proyecto: lo que aprende queda en una memoria local, fuera del repo y de la KT, y se mezcla con otros clientes.</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- CHEQUEO -->
+    <section id="chequeo">
+      <div class="eyebrow">Autoevaluación</div>
+      <h2>¿Cómo sé que lo estoy usando bien?</h2>
+      <ul class="checks">
+        <li>El <code>00-overview.md</code> entra en una pantalla y alguien nuevo entiende el proyecto leyéndolo.</li>
+        <li>Cada decisión de la bitácora tiene fuente: reunión, PR o hilo.</li>
+        <li>Tu daily sale del harness y no la escribís a mano.</li>
+        <li>Tu backlog está priorizado y no tiene tareas que ya existen en ClickUp.</li>
+        <li>El diagrama está en <code>docs/diagrams/</code> como <code>.py</code> + <code>.png</code> y coincide con el IaC.</li>
+        <li>Creaste al menos una skill propia y tenés una mejora anotada en <code>improvements.md</code>.</li>
+        <li>Si mañana te vas de vacaciones, quien te cubre clona el repo y sigue.</li>
+      </ul>
+    </section>
+
+    <footer>
+      <b>DinoCloud Internal - Confidential</b>
+      <span>Harness de Claude Code · Equipo Data &amp; AI · octubre 2026</span>
+    </footer>
+  </main>
+</div>
+
+<script>
+(function () {
+  document.querySelectorAll('.copy').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var pre = btn.parentElement.querySelector('pre');
+      var text = pre.innerText;
+      var done = function () { btn.textContent = 'Copiado'; setTimeout(function () { btn.textContent = 'Copiar'; }, 1600); };
+      var fallback = function () {
+        var r = document.createRange(); r.selectNodeContents(pre);
+        var s = window.getSelection(); s.removeAllRanges(); s.addRange(r);
+        btn.textContent = 'Seleccionado';
+        setTimeout(function () { btn.textContent = 'Copiar'; }, 1600);
+      };
+      try {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(text).then(done, fallback);
+        } else { fallback(); }
+      } catch (e) { fallback(); }
+    });
+  });
+
+  var tabs = Array.prototype.slice.call(document.querySelectorAll('.tab'));
+  var map = { data: 'tab-data', ai: 'tab-ai', ml: 'tab-ml' };
+  function select(tab, remember) {
+    tabs.forEach(function (t) {
+      var on = t === tab;
+      t.setAttribute('aria-selected', on ? 'true' : 'false');
+      t.tabIndex = on ? 0 : -1;
+      document.getElementById(t.getAttribute('aria-controls')).hidden = !on;
+    });
+    if (remember) { try { localStorage.setItem('guia-rol', tab.id); } catch (e) {} }
+  }
+  tabs.forEach(function (t, i) {
+    t.addEventListener('click', function () { select(t, true); });
+    t.addEventListener('keydown', function (e) {
+      if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
+        var n = tabs[(i + (e.key === 'ArrowRight' ? 1 : tabs.length - 1)) % tabs.length];
+        select(n, true); n.focus();
+      }
+    });
+  });
+  var initial = null;
+  var h = (location.hash || '').slice(1);
+  if (map[h]) initial = document.getElementById(map[h]);
+  if (!initial) { try { var saved = localStorage.getItem('guia-rol'); if (saved) initial = document.getElementById(saved); } catch (e) {} }
+  select(initial || tabs[0], false);
+})();
+</script>
+
+</html>

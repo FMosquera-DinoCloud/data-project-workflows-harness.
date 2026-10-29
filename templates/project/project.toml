@@ -1,0 +1,60 @@
+# Configuración del proyecto — esquema completo en ~/claude-workspace/harness/reference/project-toml.md
+
+[project]
+name        = "{{NAME}}"
+client      = "{{CLIENT}}"
+description = "{{DESCRIPTION}}"
+stage       = ""
+owner       = "{{OWNER}}"
+started     = "{{DATE}}"
+scope_confirmed = false
+
+# [[phases]]
+# id = "F1"
+# name = ""
+# end = "AAAA-MM-DD"
+# critical = []
+
+# [[team]]
+# name = ""
+# role = ""
+# aliases = []
+
+# [[client_people]]
+# name = ""
+# role = ""
+
+[drive]
+folder_id = ""
+exclude   = []
+
+[clickup]
+space     = ""
+folder_id = ""
+list_id   = ""
+
+[calendar]
+match   = []
+exclude = []
+
+[gmail]
+query = ""
+exclude_senders = ["notifications@clickup.com", "calendar-notification@google.com", "drive-shares-dm-noreply@google.com"]
+
+# [[internal]]
+# type = "slack"      # slack | gchat
+# id = ""
+# name = ""
+# ingest = true
+
+# [[client_channels]]
+# type = ""           # slack-connect | teams | gmail | gchat | whatsapp
+# id = ""
+# name = ""
+# people = []
+# ingest = true       # whatsapp: siempre false
+# notes = ""
+
+[github]
+repos = []
+
